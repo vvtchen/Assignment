@@ -6,6 +6,11 @@ name = "pypi"
 [packages]
 django = "*"
 django-cors-headers = "*"
+django-swagger-ui = "*"
+djangorestframework = "*"
+django-rest-swagger = "*"
+drf-yasg = "*"
+drf-spectacular = "*"
 
 [dev-packages]
 

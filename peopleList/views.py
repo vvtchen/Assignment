@@ -1,110 +1,78 @@
-from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseBadRequest
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.core.serializers import serialize
 import json
 from .models import People
-# Create your views here.
+from rest_framework.response import Response 
+from rest_framework.decorators import api_view
+from rest_framework import status
+from .serializer import PeopleSerializer, QuerySerializer
+from drf_spectacular.utils import extend_schema
 
+# Create your views here.
+@extend_schema(request=PeopleSerializer, responses=None)
+@api_view(["POST"])
 def createNew(request):
     if request.method == 'POST':
-        data = json.loads(request.body.decode('utf-8'))
+        serializer = PeopleSerializer(data=request.data)
+        print(serializer)
+        if serializer.is_valid():
+            serializer.save()
+            print(serializer.data)
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-        name = data.get('name')
-        position= data.get('position')
-        department= data.get('department')
-        education= data.get('education')
-        degree= data.get('degree')
-        email= data.get('email')
-        address= data.get('address')
-        postalCode= data.get('postalCode')
-        
-        people = People(name=name, position=position, department=department, education=education, degree=degree, email=email, address=address, postalCode=postalCode)
-        people.save()
 
-        return JsonResponse({
-            "success": True,
-        })
-    else:
-        return HttpResponseBadRequest("Only Post requests are allowed")
-    
+@extend_schema(responses=QuerySerializer)
+@api_view(["GET"])
 def all(request):
     if request.method == 'GET':
         people = People.objects.all()
-        data = serialize('json', people)
-        parsed_data = json.loads(data)
-        return JsonResponse(parsed_data, safe=False)
+        serializer = QuerySerializer(people, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     else:
-        return HttpResponseBadRequest("Only Get requests are allowed")
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
-
+@extend_schema(responses=None)
+@api_view(["DELETE"])
 def delete(request, id):
     if request.method == 'DELETE':
         target = People.objects.filter(pk = id);
-
-        if not target.exists():
-            return JsonResponse({
-                "success": False,
-            })
-        else:
-            target.delete()
-            return JsonResponse({
-                "success": True,
-            })
+        target.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
     else:
-        return HttpResponseBadRequest("Only Delete requests are allowed")
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
-        
+@extend_schema(responses=None, request=dict)
+@api_view(["PUT"])     
 def update(request, id):
     if request.method =="PUT":
         target = People.objects.filter(pk=id);
         if not target.exists():
-            return JsonResponse({
-                "success":False,
-                "reason":"The User does not exist"
-            })
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             data = json.loads(request.body.decode('utf-8'))
-            target.update(**data) #** syntax to unpack the dictionary as keyword arguments
-            return JsonResponse({
-                "success":True,
-            },status=200)
-            
+            target.update(**data)
+            return Response(status=status.HTTP_200_OK)      
     else:
-        return HttpResponseBadRequest("Only Post requests are allowed")
-    
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+@extend_schema(request=PeopleSerializer(many=True), responses=None)
+@api_view(["POST"])
 def templateCreate(request):
     if request.method == "POST":
-        data = json.loads(request.body.decode('utf-8'));
+        serializer = PeopleSerializer(data=request.data, many=True)
+        print (serializer)
         duplicateList = []
-        newList = []
-        
-        for people in data:
-            existed = People.objects.filter(**people)
-            if not existed.exists():
-                newList.append(People(**people))
-            else:
-                duplicateList.append(people)
-
-        if newList and not duplicateList:
-            People.objects.bulk_create(newList)
-            return JsonResponse({
-                "success":True,
-            }, status=200)
-        elif not newList:
-            return JsonResponse({
-                "success": False,
-                "issue":duplicateList,
-                "message": "全部資料重複存在資料庫中"
-            }, status=200)
-        else:
-            People.objects.bulk_create(newList)
-            return JsonResponse({
-                "success": True,
-                "issue":duplicateList,
-                "message": "部分存在資料庫中"
-            },status=200)
+        newList = []   
+        if serializer.is_valid():
+            for people in serializer.data:
+                existed = People.objects.filter(**people)
+                if not existed.exists():
+                    newList.append(People(**people))
+                else:
+                    duplicateList.append(people)
+            if newList:
+                People.objects.bulk_create(newList)
+            return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
     else:
-        return HttpResponseBadRequest("Only Post requests are allowed")
+         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
