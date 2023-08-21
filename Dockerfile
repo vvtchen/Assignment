@@ -1,8 +1,10 @@
 FROM python:3.10.6-alpine3.16
-WORKDIR /app
+WORKDIR /backend
 COPY ./requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
+
+COPY ./entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
 COPY . .
-EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

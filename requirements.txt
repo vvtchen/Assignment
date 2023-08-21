@@ -12,6 +12,7 @@ django-swagger-ui==0.1.11
 djangorestframework==3.14.0
 drf-spectacular==0.26.4
 drf-yasg==1.21.7
+gunicorn==21.2.0
 idna==3.4; python_version >= '3.5'
 inflection==0.5.1; python_version >= '3.5'
 itypes==1.2.0

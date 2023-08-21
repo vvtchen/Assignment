@@ -50,8 +50,11 @@ def update(request, id):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         else:
             data = json.loads(request.body.decode('utf-8'))
-            target.update(**data)
-            return Response(status=status.HTTP_200_OK)      
+            if data:
+                target.update(**data)
+                return Response(status=status.HTTP_200_OK)      
+            else:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
