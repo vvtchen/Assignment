@@ -12,10 +12,10 @@ from drf_spectacular.utils import extend_schema
 def createNew(request):
     if request.method == 'POST':
         serializer = PeopleSerializer(data=request.data)
-        print(serializer)
         if serializer.is_valid():
-            serializer.save()
-            print(serializer.data)
+            existed = People.objects.filter(**serializer.validated_data)
+            if not existed:
+                serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
